@@ -2,12 +2,8 @@ services:
   - type: web
     name: bugsy-api
     runtime: docker
-    plan: starter            # persistent disks need a paid plan
+    plan: free               # free tier: no persistent disk, sleeps after ~15 min idle
     healthCheckPath: /api/health
-    disk:
-      name: bugsy-data
-      mountPath: /data
-      sizeGB: 1
     envVars:
       - key: ACCESS_TOKEN
         generateValue: true  # copy it from the Render dashboard; you type it into the UI once
