@@ -6,6 +6,7 @@ import { DemoProvider } from "../fixtures/demo-provider.js";
 import { DemoPostHog, PostHog } from "./integrations/posthog.js";
 import { DemoSentry, Sentry } from "./integrations/sentry.js";
 import { Repo } from "./integrations/repo.js";
+import { slugFor, buildProfile, loadProfile, refreshProfile } from "./agents/mapper.js";
 import { createLinearIssue } from "./integrations/linear.js";
 import { investigate } from "./engine/investigate.js";
 import type { Deps } from "./engine/investigate.js";
@@ -30,9 +31,21 @@ export function buildDeps(cfg: Config, demo: boolean, ai?: AiProvider): Deps {
   };
 }
 
+/** Mapper agent on first use, cached "bugsy skill" afterwards (refreshed incrementally). */
+export async function ensureProfile(deps: Deps, onProgress: (m: string) => void, force = false) {
+  const repo = deps.repo!;
+  const cached = force ? null : await loadProfile(repo.root);
+  if (cached) {
+    const { profile, changed } = await refreshProfile(repo, cached);
+    return { profile, note: `loaded cached map (${profile.files.length} files, ${changed} changed since)` };
+  }
+  const profile = await buildProfile(repo, deps.ai, onProgress);
+  return { profile, note: `first run: mapped ${profile.files.length} files and saved skills/${slugFor(repo.root)}/SKILL.md` };
+}
+
 export async function runInvestigation(input: BugInput, cfg = loadConfig(), runId?: string): Promise<RunRecord> {
   const deps = buildDeps(cfg, !!input.demo);
-  return investigate(input, { ...deps, runId, onUpdate: saveRun });
+  return investigate(input, { ...deps, profile: deps.repo ? (p) => ensureProfile(deps, p) : undefined, runId, onUpdate: saveRun });
 }
 
 export async function createIssueForRun(id: string, cfg = loadConfig()) {

@@ -1,6 +1,6 @@
 import { parseArgs } from "node:util";
 import { loadConfig, integrationStatus } from "./config.js";
-import { runInvestigation, createIssueForRun } from "./app.js";
+import { buildDeps, ensureProfile, runInvestigation, createIssueForRun } from "./app.js";
 import { fetchMessages, replyInThread } from "./integrations/slack.js";
 import { DEMO_SAMPLES } from "../fixtures/demo-data.js";
 import type { RunRecord } from "./types.js";
@@ -8,7 +8,7 @@ import type { RunRecord } from "./types.js";
 const { values: a } = parseArgs({
   options: {
     text: { type: "string" }, user: { type: "string" }, from: { type: "string" }, to: { type: "string" },
-    demo: { type: "boolean" }, sample: { type: "string" }, linear: { type: "boolean" }, "slack-once": { type: "boolean" },
+    demo: { type: "boolean" }, map: { type: "boolean" }, sample: { type: "string" }, linear: { type: "boolean" }, "slack-once": { type: "boolean" },
   },
 });
 
@@ -34,7 +34,12 @@ function slackSummary(r: RunRecord) {
 
 const cfg = loadConfig();
 try {
-  if (a["slack-once"]) {
+  if (a.map) {
+    const deps = buildDeps(cfg, !!a.demo);
+    if (!deps.repo) throw new Error("No repository configured (REPO_PATH)");
+    const r = await ensureProfile(deps, (m) => console.log(m), true);
+    console.log(r.note);
+  } else if (a["slack-once"]) {
     if (!integrationStatus(cfg).slack) throw new Error("Slack not configured (SLACK_BOT_TOKEN, SLACK_CHANNEL_ID)");
     for (const m of await fetchMessages(cfg)) {
       const r = await runInvestigation({ text: m.text }, cfg);

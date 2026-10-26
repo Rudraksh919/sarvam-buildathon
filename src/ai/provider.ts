@@ -5,7 +5,7 @@ import type { ZodType } from "zod";
 export interface AiProvider {
   name: string;
   /** Ask for JSON matching `schema`. Must throw if the output cannot be validated. */
-  json<T>(task: "extract" | "synthesize", system: string, user: string, schema: ZodType<T>): Promise<T>;
+  json<T>(task: "extract" | "synthesize" | "map" | "select", system: string, user: string, schema: ZodType<T>): Promise<T>;
 }
 
 /** Pull the first balanced JSON object out of model text (handles fences / reasoning prefix). */

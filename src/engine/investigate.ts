@@ -4,6 +4,8 @@ import type { AiProvider } from "../ai/provider.js";
 import { EXTRACT_SYSTEM, SYNTH_SYSTEM } from "../ai/prompts.js";
 import type { PostHogLike, RepoLike, SentryLike } from "../integrations/types.js";
 import { EvidenceStore, validateSynthesis } from "./evidence.js";
+import { locate } from "../agents/locate.js";
+import type { Profile } from "../agents/mapper.js";
 import { newRunId } from "./runs.js";
 
 export interface Deps {
@@ -15,6 +17,8 @@ export interface Deps {
   synthetic: { repo: boolean; posthog: boolean; sentry: boolean };
   mode: "demo" | "live";
   confidenceThreshold: number;
+  /** Loads (or, on first use, builds) the repo map. Absent => fall back to whole-repo search. */
+  profile?: (onProgress: (m: string) => void) => Promise<{ profile: Profile; note: string }>;
   runId?: string;
   onUpdate?: (run: RunRecord) => void | Promise<void>;
 }
@@ -117,7 +121,23 @@ export async function investigate(input: BugInput, d: Deps): Promise<RunRecord> 
       await tool("repo.read", { file: f.filename, line: f.lineno }, d.repo ? () => d.repo!.window(f.filename, f.lineno!, 5) : null,
         (h) => (h ? addCode(h, "repo.read") : []));
     }
-    await tool("repo.search", { terms }, d.repo ? () => d.repo!.search(terms, 4) : null, (hits) => hits.flatMap((h) => addCode(h, "repo.search")));
+    let map: Profile | undefined;
+    if (d.repo && d.profile) {
+      const t0m = Date.now();
+      const call: ToolCall = { tool: "repo.map", args: {}, status: "ok", evidenceIds: [], ms: 0 };
+      run.toolCalls.push(call);
+      try {
+        const r = await d.profile((m) => void push(m));
+        map = r.profile; call.note = r.note;
+      } catch (e) { call.status = "error"; call.note = String((e as Error).message ?? e); }
+      call.ms = Date.now() - t0m;
+    }
+    if (map) {
+      const p = map;
+      await tool("repo.locate", { terms, files: p.files.length }, () => locate(d.repo!, p, d.ai, input.text, terms), (r) => r.hits.flatMap((h) => addCode(h, "repo.locate")));
+    } else {
+      await tool("repo.search", { terms }, d.repo ? () => d.repo!.search(terms, 4) : null, (hits) => hits.flatMap((h) => addCode(h, "repo.search")));
+    }
 
     const gathered = store.items.filter((e) => e.source !== "report");
     if (!gathered.length) {

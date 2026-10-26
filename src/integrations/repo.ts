@@ -42,14 +42,32 @@ export class Repo implements RepoLike {
     return { file: file.split(path.sep).join("/"), startLine, endLine, line, text, terms: [] };
   }
 
+  /** All indexable files (repo-relative, forward slashes) with size and mtime. */
+  async list(): Promise<{ file: string; size: number; mtimeMs: number }[]> {
+    const out: { file: string; size: number; mtimeMs: number }[] = [];
+    for await (const abs of this.walk(this.root)) {
+      const st = await fs.stat(abs);
+      if (st.size <= 400_000) out.push({ file: path.relative(this.root, abs).split(path.sep).join("/"), size: st.size, mtimeMs: Math.floor(st.mtimeMs) });
+      if (out.length >= 5000) break;
+    }
+    return out;
+  }
+
+  async read(file: string): Promise<string> {
+    return fs.readFile(await this.safePath(file), "utf8");
+  }
+
   // ponytail: linear scan of up to 3000 files; add an index if repos get huge.
-  async search(terms: string[], max = 4): Promise<CodeHit[]> {
+  async search(terms: string[], max = 4, only?: string[]): Promise<CodeHit[]> {
     const ts = [...new Set(terms.map((t) => t.toLowerCase().trim()).filter((t) => t.length >= 3))];
     if (!ts.length) return [];
     const scored: { file: string; line: number; terms: Set<string>; n: number }[] = [];
     let files = 0;
-    for await (const abs of this.walk(this.root)) {
+    const allow = only && new Set(only);
+    const source = allow ? (async function* (r: Repo) { for (const f of allow) yield path.join(r.root, f); })(this) : this.walk(this.root);
+    for await (const abs of source) {
       if (++files > 3000) break;
+      if (allow) { try { await this.safePath(path.relative(this.root, abs)); } catch { continue; } }
       const st = await fs.stat(abs);
       if (st.size > 400_000) continue;
       const lines = (await fs.readFile(abs, "utf8")).split(/\r?\n/);
@@ -61,7 +79,7 @@ export class Repo implements RepoLike {
         m.forEach((t) => hit.add(t));
         if (m.length > best.n) best = { line: i + 1, n: m.length };
       });
-      if (hit.size) scored.push({ file: path.relative(this.root, abs), line: best.line, terms: hit, n: hit.size });
+      if (hit.size) scored.push({ file: path.relative(this.root, abs).split(path.sep).join("/"), line: best.line, terms: hit, n: hit.size });
     }
     scored.sort((a, b) => b.n - a.n || a.file.localeCompare(b.file));
     const out: CodeHit[] = [];

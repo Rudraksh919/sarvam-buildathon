@@ -9,6 +9,8 @@ export interface SentryLike { issues(q: { userId?: string; text?: string }): Pro
 export interface CodeHit { file: string; startLine: number; endLine: number; line: number; text: string; terms: string[] }
 export interface RepoLike {
   root: string;
-  search(terms: string[], max?: number): Promise<CodeHit[]>;
+  search(terms: string[], max?: number, only?: string[]): Promise<CodeHit[]>;
+  list(): Promise<{ file: string; size: number; mtimeMs: number }[]>;
+  read(file: string): Promise<string>;
   window(file: string, line: number, radius?: number): Promise<CodeHit | null>;
 }

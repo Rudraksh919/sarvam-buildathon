@@ -15,6 +15,8 @@ export class DemoProvider implements AiProvider {
       const kw = [...new Set(text.toLowerCase().match(/[a-z]{5,}/g) ?? [])].slice(0, 6);
       return schema.parse({ isBug, reason: isBug ? "" : "No broken behaviour described", title: text.slice(0, 80), summary: text, keywords: kw, symbols: [] });
     }
+    if (task === "map") return schema.parse({ summaries: [] });
+    if (task === "select") return schema.parse({ files: [] });
     // synthesize: look for the pay.ts evidence ids in the prompt
     const find = (re: RegExp) => user.match(re)?.[1];
     const code = find(/(E\d+) \[repo[^\]]*\][^\n]*pay\.ts/);
