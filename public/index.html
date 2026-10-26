@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Bug Investigator</title><link rel="stylesheet" href="/style.css"></head>
+<body>
+<header><h1>🐞 AI Bug Investigator</h1><a class="on" href="/">Investigate</a><a href="/dashboard.html">History</a></header>
+<main>
+  <div class="card">
+    <div id="status" class="status">Loading integration status…</div>
+    <div id="samples" class="chips" style="margin-top:10px"></div>
+    <form id="f">
+      <label>Bug report *</label><textarea name="text" rows="3" required maxlength="5000" placeholder="Checkout keeps spinning after clicking pay"></textarea>
+      <div class="row">
+        <div><label>User id / email (optional)</label><input name="userId"></div>
+        <div><label>From (optional, ISO)</label><input name="from" placeholder="2026-10-20T00:00:00Z"></div>
+        <div><label>To (optional, ISO)</label><input name="to" placeholder="2026-10-21T00:00:00Z"></div>
+      </div>
+      <label>Diagnostic info (optional: logs, console output, stack trace)</label><textarea name="diagnostics" rows="2"></textarea>
+      <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="demo" style="width:auto" checked> Demo mode (synthetic fixtures; no real services are queried)</label>
+      <p><button id="go">Start investigation</button></p>
+    </form>
+  </div>
+  <div id="out"></div>
+</main>
+<script type="module">
+import { h, badge, renderRun } from "/ui.js";
+const $ = (s) => document.querySelector(s);
+const cfg = await (await fetch("/api/config")).json();
+$("#status").replaceChildren("Integrations: ", ...Object.entries(cfg.integrations).map(([k, v]) => badge(`${k}: ${v ? "configured" : "not configured"}`, v ? "ok" : "mute")));
+const f = $("#f");
+$("#samples").replaceChildren(...cfg.samples.map((s) => h("button", { class: "alt", type: "button", onclick: () => {
+  f.text.value = s.text; f.userId.value = s.userId ?? ""; f.demo.checked = true;
+} }, "Sample: " + s.label)));
+
+f.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const body = Object.fromEntries(new FormData(f)); body.demo = f.demo.checked;
+  $("#go").disabled = true;
+  $("#out").replaceChildren(h("div", { class: "card" }, "Starting…"));
+  try {
+    const res = await fetch("/api/investigate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const j = await res.json();
+    if (!res.ok) throw new Error(j.error);
+    for (;;) {
+      const r = await fetch(`/api/runs/${j.id}`);
+      if (r.ok) {
+        const run = await r.json();
+        $("#out").replaceChildren(h("div", { class: "card" }, renderRun(run, { onLinear: true })));
+        if (run.status !== "running") break;
+      }
+      await new Promise((r) => setTimeout(r, 500));
+    }
+  } catch (err) {
+    $("#out").replaceChildren(h("div", { class: "card err" }, "Error: " + err.message));
+  } finally { $("#go").disabled = false; }
+});
+</script></body></html>

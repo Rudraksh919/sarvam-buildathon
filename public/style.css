@@ -1,0 +1,14 @@
+:root{--bg:#0f1115;--card:#181b22;--fg:#e6e8ee;--mute:#8b93a7;--ok:#2ea66a;--warn:#d89b2b;--err:#e5544f;--line:#2a2f3a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif}
+header{display:flex;gap:20px;align-items:center;padding:12px 24px;border-bottom:1px solid var(--line)}header a{color:var(--fg);text-decoration:none;opacity:.7}header a.on{opacity:1;font-weight:600}header h1{font-size:17px;margin:0 20px 0 0}
+main{max-width:1000px;margin:0 auto;padding:20px}.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
+label{display:block;font-size:12px;color:var(--mute);margin:10px 0 4px}input,textarea{width:100%;background:#0f1115;color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:8px;font:inherit}
+.row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}button{background:#3b6cf6;color:#fff;border:0;border-radius:6px;padding:9px 16px;font:inherit;cursor:pointer}button:disabled{opacity:.5}button.alt{background:#2a2f3a}
+.badge{display:inline-block;font-size:11px;padding:1px 8px;border-radius:99px;background:#2a2f3a;margin:0 4px 4px 0}.badge.ok{background:#1d4d36}.badge.warn{background:#5a4311}
+.banner{padding:12px;border-radius:8px;margin:12px 0;background:#2a2f3a}.banner.ok{background:#173d2b;border:1px solid var(--ok)}.banner.warn{background:#4a3810;border:1px solid var(--warn)}
+.cause{font-size:16px}.chip{font-size:11px;background:#26304d;color:#9db4ff;padding:0 6px;border-radius:4px;text-decoration:none;margin-right:3px}
+pre{background:#0f1115;padding:10px;border-radius:6px;overflow:auto;max-height:300px;font-size:12px}code{background:#0f1115;padding:1px 5px;border-radius:4px}
+details.ev{border:1px solid var(--line);border-radius:6px;padding:6px 10px;margin:6px 0}summary{cursor:pointer}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{text-align:left;padding:4px 8px;border-bottom:1px solid var(--line)}.st-error{color:var(--err)}.st-ok{color:var(--ok)}.st-skipped,.st-empty{color:var(--warn)}
+.err{color:var(--err)}.steps li{color:var(--mute)}.steps li.now{color:var(--fg);font-weight:600}.chips button{margin:0 6px 6px 0;font-size:13px}.status span{margin-right:6px}
+tr.click{cursor:pointer}tr.click:hover{background:#20242e}h3{margin:18px 0 6px;font-size:14px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em}

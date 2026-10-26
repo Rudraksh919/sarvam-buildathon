@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Investigation history</title><link rel="stylesheet" href="/style.css"></head>
+<body>
+<header><h1>🐞 AI Bug Investigator</h1><a href="/">Investigate</a><a class="on" href="/dashboard.html">History</a></header>
+<main>
+  <div class="card"><table id="t"></table><p id="empty" class="err" hidden style="color:var(--mute)">No investigations yet (records are read from runs/*.json).</p></div>
+  <div id="detail"></div>
+</main>
+<script type="module">
+import { h, badge, renderRun } from "/ui.js";
+const $ = (s) => document.querySelector(s);
+const runs = await (await fetch("/api/runs")).json();
+$("#empty").hidden = runs.length > 0;
+async function show(id) {
+  location.hash = id;
+  const run = await (await fetch(`/api/runs/${id}`)).json();
+  $("#detail").replaceChildren(h("div", { class: "card" }, renderRun(run, { onLinear: true })));
+}
+$("#t").replaceChildren(h("tr", {}, ["When", "Report", "Mode", "Outcome", "Confidence", "Duration", "Linear"].map((x) => h("th", {}, x))),
+  ...runs.map((r) => h("tr", { class: "click", onclick: () => show(r.id) },
+    h("td", {}, new Date(r.startedAt).toLocaleString()),
+    h("td", {}, r.input.text.slice(0, 70)),
+    h("td", {}, r.mode),
+    h("td", {}, r.status === "running" ? badge("running") : badge(r.outcome ?? r.status, r.outcome === "DIAGNOSED" ? "ok" : "warn")),
+    h("td", {}, r.confidence != null ? `${(r.confidence * 100).toFixed(0)}%` : "–"),
+    h("td", {}, r.durationMs != null ? `${r.durationMs} ms` : "–"),
+    h("td", {}, r.linear ? h("a", { href: r.linear.url, target: "_blank", rel: "noreferrer", onclick: (e) => e.stopPropagation() }, r.linear.identifier) : "–"))));
+if (location.hash.length > 1) show(location.hash.slice(1));
+</script></body></html>
