@@ -25,13 +25,21 @@
 <script type="module">
 import { h, badge, renderRun, api } from "/ui.js";
 const $ = (s) => document.querySelector(s);
-const cfg = await (await api("/api/config")).json();
-$("#status").replaceChildren("Integrations: ", ...Object.entries(cfg.integrations).map(([k, v]) => badge(`${k}: ${v ? "configured" : "not configured"}`, v ? "ok" : "mute")));
 const f = $("#f");
-$("#samples").replaceChildren(...cfg.samples.map((s) => h("button", { class: "alt", type: "button", onclick: () => {
-  f.text.value = s.text; f.userId.value = s.userId ?? ""; f.demo.checked = true;
-} }, "Sample: " + s.label)));
 
+try {
+  const res = await api("/api/config");
+  if (!res.ok) throw new Error("API answered HTTP " + res.status);
+  const cfg = await res.json();
+  $("#status").replaceChildren("Integrations: ", ...Object.entries(cfg.integrations).map(([k, v]) => badge(`${k}: ${v ? "configured" : "not configured"}`, v ? "ok" : "mute")));
+  $("#samples").replaceChildren(...cfg.samples.map((s) => h("button", { class: "alt", type: "button", onclick: () => {
+    f.text.value = s.text; f.userId.value = s.userId ?? ""; f.demo.checked = true;
+  } }, "Sample: " + s.label)));
+} catch (err) {
+  $("#status").replaceChildren(h("span", { class: "err" }, "Cannot reach the API (" + (window.API_BASE || "same origin") + "): " + err.message + ". Check API_BASE on Vercel and ALLOWED_ORIGIN / ACCESS_TOKEN on Render."));
+}
+
+// Registered after the (possibly failing) config call; the first listener stops a native GET submit either way.
 f.addEventListener("submit", async (e) => {
   e.preventDefault();
   const body = Object.fromEntries(new FormData(f)); body.demo = f.demo.checked;

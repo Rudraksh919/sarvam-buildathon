@@ -11,7 +11,14 @@
 <script type="module">
 import { h, badge, renderRun, api } from "/ui.js";
 const $ = (s) => document.querySelector(s);
-const runs = await (await api("/api/runs")).json();
+let runs = [];
+try {
+  const res = await api("/api/runs");
+  if (!res.ok) throw new Error("API answered HTTP " + res.status);
+  runs = await res.json();
+} catch (err) {
+  $("#detail").replaceChildren(h("div", { class: "card err" }, "Cannot reach the API: " + err.message));
+}
 $("#empty").hidden = runs.length > 0;
 async function show(id) {
   location.hash = id;
