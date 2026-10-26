@@ -1,3 +1,16 @@
+// API access: same-origin by default; on Vercel, config.js sets window.API_BASE to the Render URL.
+// The access token is typed by the user and kept in localStorage (never baked into the bundle).
+export async function api(path, opts = {}) {
+  const base = (window.API_BASE || "").replace(//$/, "");
+  const call = () => fetch(base + path, { ...opts, headers: { ...(opts.headers || {}), ...(localStorage.token ? { Authorization: "Bearer " + localStorage.token } : {}) } });
+  let res = await call();
+  if (res.status === 401) {
+    const t = prompt("Access token required:");
+    if (t) { localStorage.token = t.trim(); res = await call(); }
+  }
+  return res;
+}
+
 // Shared rendering. All dynamic text goes through textContent (no innerHTML) so evidence data can't inject markup.
 export function h(tag, props = {}, ...kids) {
   const el = document.createElement(tag);
@@ -56,7 +69,7 @@ export function renderRun(run, { onLinear } = {}) {
     if (run.linear) out.append(h("a", { href: run.linear.url, target: "_blank", rel: "noreferrer" }, `Linear ${run.linear.identifier}`));
     else root.append(h("button", { onclick: async (e) => {
       e.target.disabled = true; out.textContent = "Creating…";
-      const res = await fetch(`/api/runs/${run.id}/linear`, { method: "POST" });
+      const res = await api(`/api/runs/${run.id}/linear`, { method: "POST" });
       const j = await res.json();
       out.textContent = "";
       if (res.ok) out.append(h("a", { href: j.url, target: "_blank", rel: "noreferrer" }, `Created ${j.identifier}`));

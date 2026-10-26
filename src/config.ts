@@ -3,7 +3,9 @@ import { fileURLToPath } from "node:url";
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const DEMO_REPO = path.join(ROOT, "fixtures", "demo-repo");
-export const RUNS_DIR = path.join(ROOT, "runs");
+/** Persistent data (run history, repo maps). Point DATA_DIR at a mounted disk when deploying. */
+export const DATA_DIR = process.env.DATA_DIR?.trim() ? path.resolve(process.env.DATA_DIR.trim()) : ROOT;
+export const RUNS_DIR = path.join(DATA_DIR, "runs");
 
 const env = (k: string) => process.env[k]?.trim() || undefined;
 const num = (k: string, d: number) => (Number.isFinite(Number(env(k))) && env(k) ? Number(env(k)) : d);
@@ -19,6 +21,9 @@ export function loadConfig() {
     confidenceThreshold: num("CONFIDENCE_THRESHOLD", 0.6),
     httpTimeoutMs: num("HTTP_TIMEOUT_S", 15) * 1000,
     port: num("PORT", 3000),
+    host: env("HOST") ?? "127.0.0.1",
+    accessToken: env("ACCESS_TOKEN"),
+    allowedOrigin: env("ALLOWED_ORIGIN"),
   };
 }
 export type Config = ReturnType<typeof loadConfig>;

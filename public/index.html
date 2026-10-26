@@ -21,10 +21,11 @@
   </div>
   <div id="out"></div>
 </main>
+<script src="/config.js"></script>
 <script type="module">
-import { h, badge, renderRun } from "/ui.js";
+import { h, badge, renderRun, api } from "/ui.js";
 const $ = (s) => document.querySelector(s);
-const cfg = await (await fetch("/api/config")).json();
+const cfg = await (await api("/api/config")).json();
 $("#status").replaceChildren("Integrations: ", ...Object.entries(cfg.integrations).map(([k, v]) => badge(`${k}: ${v ? "configured" : "not configured"}`, v ? "ok" : "mute")));
 const f = $("#f");
 $("#samples").replaceChildren(...cfg.samples.map((s) => h("button", { class: "alt", type: "button", onclick: () => {
@@ -37,11 +38,11 @@ f.addEventListener("submit", async (e) => {
   $("#go").disabled = true;
   $("#out").replaceChildren(h("div", { class: "card" }, "Starting…"));
   try {
-    const res = await fetch("/api/investigate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const res = await api("/api/investigate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const j = await res.json();
     if (!res.ok) throw new Error(j.error);
     for (;;) {
-      const r = await fetch(`/api/runs/${j.id}`);
+      const r = await api(`/api/runs/${j.id}`);
       if (r.ok) {
         const run = await r.json();
         $("#out").replaceChildren(h("div", { class: "card" }, renderRun(run, { onLinear: true })));

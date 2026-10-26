@@ -2,14 +2,14 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import { z } from "zod";
-import { ROOT } from "../config.js";
+import { DATA_DIR } from "../config.js";
 import type { AiProvider } from "../ai/provider.js";
 import type { RepoLike } from "../integrations/types.js";
 
 export interface FileEntry { file: string; size: number; mtimeMs: number; symbols: string[]; summary?: string }
 export interface Profile { root: string; name: string; createdAt: string; updatedAt: string; files: FileEntry[] }
 
-const SKILLS_DIR = path.join(ROOT, "skills");
+const SKILLS_DIR = path.join(DATA_DIR, "skills");
 const SYMBOL_RE = /^\s*(?:export\s+)?(?:default\s+)?(?:async\s+)?(?:function\*?|class|interface|type|enum|def|func|fn|struct)\s+(?:\([^)]*\)\s*)?([A-Za-z_$][\w$]*)|^\s*(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?(?:\(|function|[A-Za-z_$][\w$]*\s*=>)/gm;
 
 export const extractSymbols = (src: string): string[] => {

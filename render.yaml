@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: bugsy-api
+    runtime: docker
+    plan: starter            # persistent disks need a paid plan
+    healthCheckPath: /api/health
+    disk:
+      name: bugsy-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: ACCESS_TOKEN
+        generateValue: true  # copy it from the Render dashboard; you type it into the UI once
+      - key: ALLOWED_ORIGIN
+        sync: false          # your Vercel URL, e.g. https://bugsy.vercel.app
+      - key: TARGET_REPO_URL
+        sync: false          # https clone URL (private repos: include a read-only token)
+      - key: SARVAM_API_KEY
+        sync: false
+      - key: LINEAR_API_KEY
+        sync: false
+      - key: POSTHOG_API_KEY
+        sync: false
+      - key: POSTHOG_PROJECT_ID
+        sync: false
+      - key: SENTRY_AUTH_TOKEN
+        sync: false
+      - key: SENTRY_ORG
+        sync: false
+      - key: SENTRY_PROJECT
+        sync: false

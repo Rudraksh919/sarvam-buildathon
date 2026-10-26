@@ -7,14 +7,15 @@
   <div class="card"><table id="t"></table><p id="empty" class="err" hidden style="color:var(--mute)">No investigations yet (records are read from runs/*.json).</p></div>
   <div id="detail"></div>
 </main>
+<script src="/config.js"></script>
 <script type="module">
-import { h, badge, renderRun } from "/ui.js";
+import { h, badge, renderRun, api } from "/ui.js";
 const $ = (s) => document.querySelector(s);
-const runs = await (await fetch("/api/runs")).json();
+const runs = await (await api("/api/runs")).json();
 $("#empty").hidden = runs.length > 0;
 async function show(id) {
   location.hash = id;
-  const run = await (await fetch(`/api/runs/${id}`)).json();
+  const run = await (await api(`/api/runs/${id}`)).json();
   $("#detail").replaceChildren(h("div", { class: "card" }, renderRun(run, { onLinear: true })));
 }
 $("#t").replaceChildren(h("tr", {}, ["When", "Report", "Mode", "Outcome", "Confidence", "Duration", "Linear"].map((x) => h("th", {}, x))),
